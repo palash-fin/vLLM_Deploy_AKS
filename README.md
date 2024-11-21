@@ -25,11 +25,13 @@ This repository contains the necessary deployment configurations for running vLL
 ### 1. Kubernetes Secret for Hugging Face Token
 Before deploying, create a Kubernetes secret to store your Hugging Face token. This token is required to pull the model during container initialization.
 
+#### Using `Secret Yaml`:
+https://github.com/palash-fin/vLLM_Deploy_AKS/blob/main/secret_hf.yaml
+
 #### Using `kubectl`:
+
 ```bash
 kubectl create secret generic vllm-model-pull-hf \
   --from-literal=HUGGINGFACE_TOKEN=<your_token> \
   -n genai-deployment
-
-#### Using `Secret Yaml`: 
-https://github.com/palash-fin/vLLM_Deploy_AKS/blob/main/secret_hf.yaml
+  
