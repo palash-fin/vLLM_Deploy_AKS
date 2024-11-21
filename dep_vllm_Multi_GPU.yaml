@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-dep-gen
+  namespace: <use your namespace>
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm-gen
+  template:
+    metadata:
+      annotations:
+       prometheus.io/scrape: "true"
+      labels:
+        app: vllm-gen
+    spec:
+      containers:
+      - args:
+        - --model
+        - mistralai/Mistral-7B-Instruct-v0.3
+        - --gpu-memory-utilization
+        - "0.95"
+        - --tensor-parallel-size=4
+        - --max-model-len=24300
+        - --enforce-eager
+        - --disable-log-requests= "True"
+        - --dtype=float
+        env:
+        - name: HUGGING_FACE_HUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: HUGGINGFACE_TOKEN
+              name: vllm-model-pull-hf
+        image: vllm/vllm-openai:latest
+        name: vllm-gen
+        ports:
+        - containerPort: 8000
+          protocol: TCP
+        resources:
+          limits:
+            nvidia.com/gpu: "4"
+          requests:
+            nvidia.com/gpu: "4"
+        volumeMounts:
+        - mountPath: /dev/shm
+          name: shm
+      nodeSelector:
+        accelerator: nvidia
+        agentpool: <name of your node pool>
+      tolerations:
+      #taints and tolerations as per your nodepool creation
+      - key: "sku"
+        operator: "Equal"
+        value: "gpu"
+        effect: "NoSchedule"
+      volumes:
+      - emptyDir:
+          medium: Memory
+          sizeLimit: 500Mi
+        name: shm
+
+---
+#service to expose the pod in AKS as LoadBalancer
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-gen-lb
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 8000
+    targetPort: 8000
+  selector:
+    app: vllm-gen
+
+
+---
+
+#service to hit /metrics endpoint in the pod
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-metrics
+  labels:
+    app: vllm-gen
+spec:
+  ports:
+  - name: metrics
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+  selector:
+    app: vllm-gen
