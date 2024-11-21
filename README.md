@@ -31,5 +31,5 @@ kubectl create secret generic vllm-model-pull-hf \
   --from-literal=HUGGINGFACE_TOKEN=<your_token> \
   -n genai-deployment
 
-#### Using `kubectl`: 
+#### Using `Secret Yaml`: 
 https://github.com/palash-fin/vLLM_Deploy_AKS/blob/main/secret_hf.yaml
